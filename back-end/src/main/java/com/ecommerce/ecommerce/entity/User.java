@@ -25,4 +25,21 @@ public class User
     @Lob
     @Column(columnDefinition = "longblob")
     private byte[] img;
+
+    // Getter for username (which is the email in your case)
+    // Getter for password (explicitly defining it here, just in case Lombok doesn't work)
+    public String getPassword() {
+        return this.password;
+    }
+    public String getUsername() {
+        return this.name;
+    }
+    public String getEmail() {
+        return this.name;
+    }
+
+    // Getter for roles (single role)
+    public String getRole() {
+        return this.role.name();  // Return the role as a string (assuming it's an enum)
+    }
 }
