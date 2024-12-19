@@ -4,6 +4,8 @@ import com.ecommerce.ecommerce.entity.User;
 import com.ecommerce.ecommerce.enums.UserRole;
 import com.ecommerce.ecommerce.repository.UserRepository;
 import com.ecommerce.ecommerce.utils.JwtUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -16,10 +18,15 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 public class AuthController {
 
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
+
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
+
+    @Autowired
+    private BCryptPasswordEncoder bCryptPasswordEncoder;
 
     public AuthController(JwtUtil jwtUtil, AuthenticationManager authenticationManager,
                           PasswordEncoder passwordEncoder, UserRepository userRepository) {
@@ -31,11 +38,15 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<String> register(@RequestBody AuthRequest authRequest) {
+        logger.info("Register request received for email: {}", authRequest.getEmail());
+
         if (authRequest.getEmail() == null || authRequest.getPassword() == null) {
+            logger.warn("Registration failed: Email or password is null.");
             return ResponseEntity.badRequest().body("Email or password cannot be null");
         }
 
         if (userRepository.findByEmail(authRequest.getEmail()) != null) {
+            logger.warn("Registration failed: User with email {} already exists.", authRequest.getEmail());
             return ResponseEntity.badRequest().body("User already exists");
         }
 
@@ -45,24 +56,32 @@ public class AuthController {
         newUser.setRole(UserRole.CUSTOMER);
         userRepository.save(newUser);
 
+        logger.info("User with email {} registered successfully.", authRequest.getEmail());
         return ResponseEntity.ok("User registered successfully");
     }
 
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody AuthRequest authRequest) {
+        logger.info("Login request received for email: {}", authRequest.getEmail());
+
         UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                 authRequest.getEmail(), authRequest.getPassword());
 
-        Authentication auth = authenticationManager.authenticate(authToken);
-        if (auth.isAuthenticated()) {
-            String token = jwtUtil.generateToken(authRequest.getEmail());
-            return ResponseEntity.ok(token);
+        try {
+            Authentication auth = authenticationManager.authenticate(authToken);
+            if (auth.isAuthenticated()) {
+                String token = jwtUtil.generateToken(authRequest.getEmail());
+                logger.info("User {} logged in successfully. Token generated.", authRequest.getEmail());
+                return ResponseEntity.ok(token);
+            }
+        } catch (Exception e) {
+            logger.error("Authentication failed for user {}: {}", authRequest.getEmail(), e.getMessage());
         }
 
-        return ResponseEntity.status(401).body("Invalid credentials");
+        logger.warn("Login failed for user {}: Invalid credentials.", authRequest.getEmail());
+        return ResponseEntity.status(403).body("Forbidden: Invalid credentials");
     }
-    @Autowired
-    private BCryptPasswordEncoder bCryptPasswordEncoder;
+
 
     public static class AuthRequest {
         private String email;

@@ -36,7 +36,7 @@ public class JwtUtil {
     }
 
     private Claims extractAllClaims(String token) {
-        return Jwts.parser()  // Use parser() for JJWT 0.12.6
+        return Jwts.parser()  // Use parser() for JJWT 0    .12.6
                 .setSigningKey(secretKey)  // Set the signing key for verification
                 .build()
                 .parseClaimsJws(token)  // Parse the JWT token and get the claims
