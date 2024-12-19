@@ -39,8 +39,8 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/login", "/register" , "/products").permitAll()
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/login", "/register").permitAll()
+                        .requestMatchers("/admin/**" , "/products").hasRole("ADMIN")
                         .anyRequest().authenticated())
                         .addFilterBefore(
                         new JwtAuthenticationFilter(jwtUtil, userDetailsService),
